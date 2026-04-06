@@ -22,8 +22,8 @@ func ParseCityList(contents []byte) engine.ParseResult {
 					Type: "url",
 					Url:  url,
 					ParserFunc: func(bytes []byte) engine.ParseResult {
-						return engine.ParseResult{}
-						//return ParseCityUserList(bytes, url)
+						//return engine.ParseResult{}
+						return ParseCityUserList(bytes, url)
 					},
 				})
 			}
