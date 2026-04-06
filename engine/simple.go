@@ -1,13 +1,16 @@
 package engine
 
 import (
+	"go-spider/types"
+
 	"github.com/gookit/goutil/dump"
 )
 
-type SimpleEngine struct{}
+type SimpleEngine struct {
+}
 
-func (e SimpleEngine) Run(seeds ...Request) {
-	var requests []Request
+func (e SimpleEngine) Run(seeds ...types.Request) {
+	var requests []types.Request
 	for _, req := range seeds {
 		requests = append(requests, req)
 	}

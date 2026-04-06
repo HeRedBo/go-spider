@@ -1,4 +1,4 @@
-package engine
+package types
 
 type Request struct {
 	Type       string // 请求类型 url  html
@@ -14,4 +14,8 @@ type ParseResult struct {
 
 func NilParser([]byte) ParseResult {
 	return ParseResult{}
+}
+
+type ReadyNotifier interface {
+	WorkerReady(chan Request)
 }

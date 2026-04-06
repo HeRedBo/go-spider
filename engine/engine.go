@@ -2,13 +2,14 @@ package engine
 
 import (
 	"go-spider/fetcher"
+	"go-spider/types"
 	"log"
 
 	"github.com/gookit/goutil/dump"
 )
 
-func Run(seeds ...Request) {
-	var requests []Request
+func Run(seeds ...types.Request) {
+	var requests []types.Request
 	for _, req := range seeds {
 		requests = append(requests, req)
 	}

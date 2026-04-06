@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"go-spider/engine"
+	"go-spider/types"
 	"regexp"
 	"strconv"
 )
@@ -9,8 +9,8 @@ import (
 var CityListRe = regexp.MustCompile(`<a href="(http://www.zhenai.com/zhenghun/[0-9a-z]+)"[^>]*>([^<]+)</a>`)
 var pageLimit = 2 // 限制抓取页面 根据实际需求调整 xia
 
-func ParseCityList(contents []byte) engine.ParseResult {
-	result := engine.ParseResult{}
+func ParseCityList(contents []byte) types.ParseResult {
+	result := types.ParseResult{}
 	matches := CityListRe.FindAllSubmatch(contents, -1)
 	for _, m := range matches {
 		result.Items = append(result.Items, "City "+string(m[2]))
@@ -18,11 +18,11 @@ func ParseCityList(contents []byte) engine.ParseResult {
 		if pageLimit > 0 {
 			for i := 1; i <= pageLimit; i++ {
 				url := string(m[1]) + "/" + strconv.Itoa(i)
-				result.Requests = append(result.Requests, engine.Request{
+				result.Requests = append(result.Requests, types.Request{
 					Type: "url",
 					Url:  url,
-					ParserFunc: func(bytes []byte) engine.ParseResult {
-						//return engine.ParseResult{}
+					ParserFunc: func(bytes []byte) types.ParseResult {
+						//return types.ParseResult{}
 						return ParseCityUserList(bytes, url)
 					},
 				})
@@ -31,10 +31,10 @@ func ParseCityList(contents []byte) engine.ParseResult {
 			url := string(m[1])
 			result.Requests = append(
 				result.Requests,
-				engine.Request{
+				types.Request{
 					Type: "url",
 					Url:  string(m[1]),
-					ParserFunc: func(bytes []byte) engine.ParseResult {
+					ParserFunc: func(bytes []byte) types.ParseResult {
 						return ParseCityUserList(bytes, url)
 					},
 				})
