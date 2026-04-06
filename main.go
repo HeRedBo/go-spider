@@ -20,7 +20,7 @@ func main() {
 		Type: "url",
 		//Url:  "http://www.zhenai.com/zhenghun",
 		//ParserFunc: parser.ParseCityList,
-		Url: "http://www.zhenai.com/zhenghun/akesu/1",
+		Url: "http://www.zhenai.com/zhenghun/akesu/2",
 		ParserFunc: func(bytes []byte) types.ParseResult {
 			return parser.ParseCityUserList(bytes, "http://www.zhenai.com/zhenghun/akesu/1")
 		},
