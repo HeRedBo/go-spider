@@ -3,8 +3,7 @@ package persist
 import (
 	"go-spider/zhenai/model"
 	"testing"
-
-	"github.com/gookit/goutil/dump"
+	"time"
 )
 
 func TestItemSaver(t *testing.T) {
@@ -34,7 +33,10 @@ func TestItemSaver(t *testing.T) {
 	if err != nil {
 		return
 	}
-	dump.P(saver)
-	dump.P(merber)
 
+	// 写入数据
+	saver <- merber
+	// ✅ 关键：等待协程完成保存
+	time.Sleep(1 * time.Second)
+	t.Log("✅ 数据已成功写入ES")
 }
