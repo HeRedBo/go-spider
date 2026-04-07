@@ -8,7 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/olivere/elastic"
+	"github.com/gookit/goutil/dump"
+	"github.com/olivere/elastic/v7"
 )
 
 var Type = "zhenai"
@@ -20,7 +21,7 @@ const (
 )
 
 func ItemSaver(index string) (chan interface{}, error) {
-	out := make(chan interface{})
+
 	// 判断索引是否存在并创建索引
 	client, err := elastic.NewClient(
 		elastic.SetURL("http://127.0.0.1:9200"),
@@ -48,7 +49,9 @@ func ItemSaver(index string) (chan interface{}, error) {
 			return nil, err
 		}
 	}
-
+	out := make(chan interface{})
+	//go batchSaveLoop(client, index, out)
+	//return out, nil
 	go func() {
 		itemCount := 0
 		for {
@@ -109,13 +112,13 @@ func flushBatch(ctx context.Context, client *elastic.Client, index string, items
 	bulkRequest := client.Bulk().Index(index).Type(Type)
 
 	for _, item := range items {
-		member, ok := item.(model.Member)
+		// 面向接口编程，兼容所有 Entity
+		entity, ok := item.(Entity)
 		if !ok {
-			log.Printf("⚠️  非Member类型，跳过: %v", item)
+			log.Printf("⚠️  未实现 Entity 接口，跳过: %T", item)
 			continue
 		}
-
-		id := strconv.Itoa(member.MemberID)
+		id := entity.ID()
 
 		// 构造ES批量操作：存在则更新，不存在则创建（upsert）
 		req := elastic.NewBulkUpdateRequest().
@@ -142,7 +145,7 @@ func flushBatch(ctx context.Context, client *elastic.Client, index string, items
 	// 打印失败项（调试用）
 	if len(res.Failed()) > 0 {
 		for _, fail := range res.Failed() {
-			log.Printf("❌ 失败ID:%s Error:%s", fail.Id, fail.Error)
+			log.Printf("❌ 失败ID:%s Error: %v", fail.Id, fail.Error)
 		}
 	}
 }
@@ -157,7 +160,6 @@ func save(client *elastic.Client, index string, item interface{}) (id string, er
 	ctx := context.Background()
 	exist, err := client.Exists().
 		Index(index).
-		Type(Type).
 		Id(IdString).
 		Do(ctx)
 	if err != nil {
@@ -166,7 +168,6 @@ func save(client *elastic.Client, index string, item interface{}) (id string, er
 	if exist {
 		resp, err := client.Update().
 			Index(index).
-			Type(Type).
 			Id(IdString).
 			Doc(item).
 			Do(ctx)
@@ -177,13 +178,13 @@ func save(client *elastic.Client, index string, item interface{}) (id string, er
 	} else {
 		resp, err := client.Index().
 			Index(index).
-			Type(Type).
 			Id(IdString).
 			BodyJson(item).
 			Do(ctx)
 		if err != nil {
 			return "", err
 		}
+		dump.P(resp, nil)
 		return resp.Id, nil
 	}
 

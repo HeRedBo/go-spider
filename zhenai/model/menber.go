@@ -1,5 +1,7 @@
 package model
 
+import "strconv"
+
 type Member struct {
 	Age              int
 	AvatarURL        string
@@ -23,4 +25,8 @@ type Member struct {
 	Salary           string
 	Sex              int
 	WorkCity         string
+}
+
+func (m Member) ID() string {
+	return strconv.Itoa(m.MemberID)
 }
