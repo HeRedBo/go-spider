@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/olivere/elastic"
+	"github.com/olivere/elastic/v7"
 )
 
 func TestItemSaver(t *testing.T) {
@@ -117,7 +117,6 @@ func TestItemSaver_Batch(t *testing.T) {
 	for _, m := range testMembers {
 		exists, err := client.Exists().
 			Index("dating_profile").
-			Type(Type).
 			Id(strconv.Itoa(m.MemberID)).
 			Do(context.Background())
 
@@ -130,40 +129,5 @@ func TestItemSaver_Batch(t *testing.T) {
 			t.Logf("✅ 数据保存成功 ID: %d", m.MemberID)
 		}
 	}
-
-	t.Log("🎉 批量保存单元测试全部通过！") // 3. 发送数据到批量通道
-	t.Log("开始发送测试数据到批量保存通道...")
-	for _, m := range testMembers {
-		itemChan <- m
-	}
-
-	// 4. 关闭通道 → 触发批量保存器自动提交剩余数据
-	close(itemChan)
-
-	// 5. 等待批量协程处理完毕（因为通道关闭，协程会自动 flush 并退出）
-	// 这里不需要 WaitGroup，不需要 sleep，通道关闭后批量协程自动结束
-	t.Log("等待批量保存完成...")
-
-	// 给一点极短时间让协程完成收尾（必执行，不会卡）
-	time.Sleep(100 * time.Millisecond)
-	
-	for _, m := range testMembers {
-		exists, err := client.Exists().
-			Index("dating_profile").
-			Type(Type).
-			Id(strconv.Itoa(m.MemberID)).
-			Do(context.Background())
-
-		if err != nil {
-			t.Errorf("检查数据失败: %v", err)
-		}
-		if !exists {
-			t.Errorf("数据未保存成功 ID: %d", m.MemberID)
-		} else {
-			t.Logf("✅ 数据保存成功 ID: %d", m.MemberID)
-		}
-	}
-
 	t.Log("🎉 批量保存单元测试全部通过！")
-
 }

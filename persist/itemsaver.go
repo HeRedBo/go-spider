@@ -3,16 +3,12 @@ package persist
 import (
 	"context"
 	"fmt"
-	"go-spider/zhenai/model"
 	"log"
-	"strconv"
 	"time"
 
 	"github.com/gookit/goutil/dump"
 	"github.com/olivere/elastic/v7"
 )
-
-var Type = "zhenai"
 
 // 批量配置
 const (
@@ -50,21 +46,21 @@ func ItemSaver(index string) (chan interface{}, error) {
 		}
 	}
 	out := make(chan interface{})
-	//go batchSaveLoop(client, index, out)
-	//return out, nil
-	go func() {
-		itemCount := 0
-		for {
-			item := <-out
-			id, err := save(client, index, item)
-			if err != nil {
-				log.Printf("item save :error saving item %v : %v\n", item, err)
-			}
-			fmt.Printf("es save client count:%d id %v ,item : %v\n", itemCount, id, item)
-			itemCount++
-		}
-	}()
+	go batchSaveLoop(client, index, out)
 	return out, nil
+	//go func() {
+	//	itemCount := 0
+	//	for {
+	//		item := <-out
+	//		id, err := save(client, index, item)
+	//		if err != nil {
+	//			log.Printf("item save :error saving item %v : %v\n", item, err)
+	//		}
+	//		fmt.Printf("es save client count:%d id %v ,item : %v\n", itemCount, id, item)
+	//		itemCount++
+	//	}
+	//}()
+	//return out, nil
 }
 
 // region 批量处理数据
@@ -109,7 +105,7 @@ func flushBatch(ctx context.Context, client *elastic.Client, index string, items
 		return
 	}
 
-	bulkRequest := client.Bulk().Index(index).Type(Type)
+	bulkRequest := client.Bulk().Index(index)
 
 	for _, item := range items {
 		// 面向接口编程，兼容所有 Entity
@@ -121,11 +117,9 @@ func flushBatch(ctx context.Context, client *elastic.Client, index string, items
 		id := entity.ID()
 
 		// 构造ES批量操作：存在则更新，不存在则创建（upsert）
-		req := elastic.NewBulkUpdateRequest().
+		req := elastic.NewBulkIndexRequest().
 			Id(id).
-			Doc(item).
-			Upsert(item) // 没有就创建，有就更新
-
+			Doc(item)
 		bulkRequest.Add(req)
 	}
 	// 执行批量请求
@@ -153,9 +147,14 @@ func flushBatch(ctx context.Context, client *elastic.Client, index string, items
 // endregion
 // region 数据单个处理
 func save(client *elastic.Client, index string, item interface{}) (id string, err error) {
-	//data := model.Member(item)
-	data := item.(model.Member)
-	IdString := strconv.Itoa(data.MemberID)
+	entity, ok := item.(Entity)
+	if !ok {
+		log.Printf("⚠️  未实现 Entity 接口，跳过: %T", item)
+		err = fmt.Errorf("数据类型 %T 未实现 persist.Entity 接口，无法保存", item)
+		return "", err
+
+	}
+	IdString := entity.ID()
 	// 执行ES请求需要提供一个上下文对象
 	ctx := context.Background()
 	exist, err := client.Exists().
