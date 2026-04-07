@@ -48,6 +48,8 @@ func ItemSaver(index string) (chan interface{}, error) {
 	out := make(chan interface{})
 	go batchSaveLoop(client, index, out)
 	return out, nil
+
+	// 单个处理数据
 	//go func() {
 	//	itemCount := 0
 	//	for {
@@ -149,12 +151,17 @@ func flushBatch(ctx context.Context, client *elastic.Client, index string, items
 func save(client *elastic.Client, index string, item interface{}) (id string, err error) {
 	entity, ok := item.(Entity)
 	if !ok {
-		log.Printf("⚠️  未实现 Entity 接口，跳过: %T", item)
+		//log.Printf("⚠️  未实现 Entity 接口，跳过: %T", item)
+		dump.P("⚠️  未实现 Entity 接口，跳过: %T", item)
 		err = fmt.Errorf("数据类型 %T 未实现 persist.Entity 接口，无法保存", item)
 		return "", err
-
 	}
 	IdString := entity.ID()
+	//member, ok := item.(model.Member)
+	//if !ok {
+	//	return "", fmt.Errorf("非 Member类型 跳过 %v", item)
+	//}
+	//IdString := strconv.Itoa(member.MemberID)
 	// 执行ES请求需要提供一个上下文对象
 	ctx := context.Background()
 	exist, err := client.Exists().
@@ -186,7 +193,6 @@ func save(client *elastic.Client, index string, item interface{}) (id string, er
 		dump.P(resp, nil)
 		return resp.Id, nil
 	}
-
 }
 
 // endregion

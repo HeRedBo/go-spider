@@ -19,3 +19,9 @@ func NilParser([]byte) ParseResult {
 type ReadyNotifier interface {
 	WorkerReady(chan Request)
 }
+
+// 标记接口：只要实现了这个接口，就表示可以存入 数据处理模块
+
+type Persistable interface {
+	IsPersistable() bool
+}

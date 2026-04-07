@@ -4,9 +4,9 @@ import (
 	"context"
 	"go-spider/scheduler"
 	"go-spider/types"
-	"go-spider/zhenai/model"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -16,6 +16,7 @@ import (
 type ConcurrentEngine struct {
 	Scheduler   scheduler.Scheduler
 	WorkerCount int // 工人协程数
+	ItemChan    chan interface{}
 
 	activeReq int           // 新增：记录活跃请求数，用于判断是否全部结束
 	timeout   time.Duration // 全局超时时间
@@ -50,7 +51,8 @@ func (e *ConcurrentEngine) Run(seeds ...types.Request) {
 		cancel() // 触发所有协程退出
 	}()
 
-	outChan := make(chan types.ParseResult)
+	// 3. 启动调度器 + 协程
+	outChan := make(chan types.ParseResult, 10)
 	e.Scheduler.Run()
 
 	// 创建工人协程
@@ -58,62 +60,67 @@ func (e *ConcurrentEngine) Run(seeds ...types.Request) {
 		createWorker(ctx, e.Scheduler.WorkerChan(), outChan, e.Scheduler)
 	}
 
-	// 提交请求
+	// 4. 提交种子请求
 	for _, r := range seeds {
 		e.activeReq++
 		e.Scheduler.Submit(r)
 	}
+	//5. 等待组：确保所有数据发送完毕
+	var itemWg sync.WaitGroup
 	ProfileCount := 0
-
-	// 主循环:接收结果
-	for result := range outChan {
-		// 处理 item
-		for _, item := range result.Items {
-			dump.P("Got item: %v", item)
-			//fmt.Printf("Got item: %v", item)
-			if _, ok := item.(model.Member); ok {
-				ProfileCount++
-				dump.P(ProfileCount)
-				//log.Printf("Got CityProfile Item #%d %v", ProfileCount, item)
-			}
-		}
-
-		for _, request := range result.Requests {
-			e.activeReq++
-			e.Scheduler.Submit(request)
-		}
-
-		// 没处理完一个请求结果 活跃数 - 1
-		e.activeReq--
-
-		if e.activeReq == 0 {
-			close(outChan)
-			break
-		}
-		dump.P("=== 爬虫全部完成，正常退出 ===")
-	}
-
+	// 主循环: 处理结果
 	for {
-		result := <-outChan // 注意程序死锁，任务跑完后永远收不到数据
-		for _, item := range result.Items {
-			dump.P("Got item: %v", item)
-			//fmt.Printf("Got item: %v", item)
-			if _, ok := item.(model.Member); ok {
-				ProfileCount++
-				dump.P(ProfileCount)
-				//log.Printf("Got CityProfile Item #%d %v", ProfileCount, item)
+		select {
+		case <-ctx.Done():
+			dump.P("=== 超时/信号，退出主循环 ===")
+			goto END
+		case result, ok := <-outChan:
+			if !ok {
+				dump.P("=== outChan 已关闭，退出 ===")
+				goto END
+			}
+			// 处理 item
+			for _, item := range result.Items {
+				//dump.P("Got item: %v", item)
+				//fmt.Printf("Got item: %v", item)
+				if p, ok := item.(types.Persistable); ok && p.IsPersistable() {
+					//fmt.Printf("Got CityProfile Item #%d %v", ProfileCount, item)
+					//dump.P("Got CityProfile Item #%d %v", ProfileCount, item)
+					dump.P("抓取到用户 #%d: %+v", ProfileCount, item)
+					ProfileCount++
+					// 发送数据并等待完成
+					itemWg.Add(1)
+					go func(v interface{}) {
+						defer itemWg.Done()
+						e.ItemChan <- v
+					}(item)
+
+				}
+			}
+			// 提交新请求
+			for _, request := range result.Requests {
+				e.activeReq++
+				e.Scheduler.Submit(request)
+			}
+
+			// 没处理完一个请求结果 活跃数 - 1
+			e.activeReq--
+			if e.activeReq == 0 {
+				dump.P("=== 爬虫全部完成，正常退出 ===")
+				goto END
 			}
 		}
-
-		for _, request := range result.Requests {
-			e.Scheduler.Submit(request)
-		}
-		// 请求和item都为空时，退出循环
-		if len(result.Requests) == 0 && len(result.Items) == 0 {
-			break
-		}
 	}
-
+	//最终：优雅关闭
+END:
+	// 1. 关闭调度器
+	// 2. 等待所有数据发送到 ItemChan
+	itemWg.Wait()
+	//// 关闭 ItemChan → 触发 ItemSaver 自动 flush 剩余数据
+	close(e.ItemChan)
+	// 4. 【关键】等待批量保存完成（给1.5秒，确保ES写入）
+	time.Sleep(1500 * time.Millisecond)
+	dump.P("=== 爬虫程序全部结束，数据处理逻辑完成 ===")
 }
 
 // createWorker 传入 ctx 支持主动退出
@@ -128,21 +135,21 @@ func createWorker(ctx context.Context, in chan types.Request, out chan types.Par
 
 			}
 			ready.WorkerReady(in)
-			//requestm := <-in // 注意死锁 没有任务了永远阻塞
+			//request := <-in // 注意死锁 没有任务了永远阻塞
 			// 管道关闭后自动退出
 			request, ok := <-in
 			if !ok {
 				return
 			}
 			// 执行爬取任务
-			result, err := worker(request)
+			res, err := worker(request)
 			if err != nil {
 				continue
 			}
 
 			// 发送结果（支持 ctx 退出）
 			select {
-			case out <- result:
+			case out <- res:
 			case <-ctx.Done():
 				return
 			}

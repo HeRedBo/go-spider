@@ -30,3 +30,7 @@ type Member struct {
 func (m Member) ID() string {
 	return strconv.Itoa(m.MemberID)
 }
+
+func (m Member) IsPersistable() bool {
+	return true
+}
