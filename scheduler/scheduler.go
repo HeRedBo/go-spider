@@ -8,10 +8,6 @@ import (
 type Scheduler interface {
 	Submit(req types.Request)
 	WorkerChan() chan types.Request
-	ReadyNotifier
+	types.ReadyNotifier
 	Run()
-}
-
-type ReadyNotifier interface {
-	WorkerReady(chan types.Request)
 }
