@@ -11,6 +11,8 @@ require (
 )
 
 require (
+	github.com/PuerkitoBio/goquery v1.12.0 // indirect
+	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
