@@ -102,6 +102,27 @@ func FetchWithRetry(url, method string) ([]byte, error) {
 	return body, nil
 }
 
+// FetchBinary 下载二进制文件（图片等），不做编码转换
+func FetchBinary(url string) ([]byte, error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", randomUA())
+	req.Header.Set("Referer", "https://www.3gbizhi.com/")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("http status error: %d", resp.StatusCode)
+	}
+	return io.ReadAll(resp.Body)
+}
+
 // determineEncoding 自动检测网页编码
 func determineEncoding(r *bufio.Reader) encoding.Encoding {
 	// 偷看前1024字节判断编码（不消耗数据流）
