@@ -155,7 +155,7 @@ go run start.go
 ### Web页面展示效果
 ![Web页面展示](./readme_images/web_page.png)
 
-## 技术亮点分析
+## 技术亮点
 
 1. **Worker模式**：通过goroutine池实现任务并行处理，充分利用多核CPU资源
 2. **扇入扇出模型**：在图片下载中应用，大幅提升并发效率
