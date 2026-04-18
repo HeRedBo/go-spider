@@ -1,0 +1,24 @@
+# GitHub 语言统计配置
+# 排除 frontend/view 目录下的静态文件
+frontend/view/** linguist-detectable=false
+
+# 排除 readme_images 目录
+readme_images/** linguist-detectable=false
+
+# 排除所有测试HTML文件
+**/test/*.html linguist-detectable=false
+
+# 排除单任务目录（可选，如果想只显示并发版本）
+# single-task/** linguist-detectable=false
+
+# 明确标记图片文件
+*.jpg linguist-detectable=false
+*.jpeg linguist-detectable=false
+*.png linguist-detectable=false
+*.PNG linguist-detectable=false
+*.gif linguist-detectable=false
+
+# 明确标记静态资源
+*.css linguist-detectable=false
+*.js linguist-detectable=false
+*.html linguist-detectable=false
