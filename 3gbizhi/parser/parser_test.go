@@ -8,7 +8,7 @@ import (
 )
 
 func TestParseListPage_PageLimit1(t *testing.T) {
-	contents, err := os.ReadFile("../../fetcher/3gbizhi_index.html")
+	contents, err := os.ReadFile("./test/3gbizhi_index.html")
 	if err != nil {
 		t.Fatalf("读取测试HTML失败: %v", err)
 	}
@@ -38,7 +38,7 @@ func TestParseListPage_PageLimit1(t *testing.T) {
 }
 
 func TestParseListPage_PageLimit3(t *testing.T) {
-	contents, err := os.ReadFile("../../fetcher/3gbizhi_index.html")
+	contents, err := os.ReadFile("./test/3gbizhi_index.html")
 	if err != nil {
 		t.Fatalf("读取测试HTML失败: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestParseListPage_PageLimit3(t *testing.T) {
 }
 
 func TestParseListPage_PageLimit0(t *testing.T) {
-	contents, err := os.ReadFile("../../fetcher/3gbizhi_index.html")
+	contents, err := os.ReadFile("./test/3gbizhi_index.html")
 	if err != nil {
 		t.Fatalf("读取测试HTML失败: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestParseListPage_PageLimit0(t *testing.T) {
 }
 
 func TestExtractNextPageURL(t *testing.T) {
-	contents, err := os.ReadFile("../../fetcher/3gbizhi_index.html")
+	contents, err := os.ReadFile("./test/3gbizhi_index.html")
 	if err != nil {
 		t.Fatalf("读取测试HTML失败: %v", err)
 	}
@@ -141,7 +141,7 @@ func TestNormalizeURL(t *testing.T) {
 }
 
 func TestParseDetail(t *testing.T) {
-	contents, err := os.ReadFile("../../fetcher/pic2284_detail.html")
+	contents, err := os.ReadFile("./test/pic2284_detail.html")
 	if err != nil {
 		t.Fatalf("读取测试HTML失败: %v", err)
 	}
@@ -185,7 +185,7 @@ func TestParseDetail(t *testing.T) {
 }
 
 func TestParseSubPageImageURL(t *testing.T) {
-	contents, err := os.ReadFile("../../fetcher/pic2284_detail.html")
+	contents, err := os.ReadFile("./test/pic2284_detail.html")
 	if err != nil {
 		t.Fatalf("读取测试HTML失败: %v", err)
 	}
